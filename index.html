@@ -132,9 +132,9 @@ fetch(jsonURL, { cache: "no-store" })
         <img src="${ep.poster}" alt="${ep.episode}">
         <div class="card-content">
           <h3>${ep.episode}</h3>
-           <button class="watch" onclick="watchNow('${ep.watchLink}')">
-              ▶ Watch Now
-            </button>
+            <a href="${ep.watchLink}" style="width:100%;background-color:skyblue;">
+            <button class="download">⬇ Download</button>
+          </a><br>
           <a href="${ep.downloadLink}">
             <button class="download">⬇ Download</button>
           </a>
