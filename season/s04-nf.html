@@ -120,7 +120,7 @@ button{
 /* ===== FETCH DATA.JSON WITH CACHE FIX ===== */
 
 // Har baar fresh load ke liye unique timestamp
-const jsonURL = "../api/s4-nf.json?v=" + new Date().getTime();
+const jsonURL = "https://raw.githubusercontent.com/Maxmentor/kapilpshow-s04/refs/heads/main/api/s4-nf.json?v=" + new Date().getTime();
 
 fetch(jsonURL, { cache: "no-store" })
 .then(response => response.json())
