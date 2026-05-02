@@ -3,124 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium Player | Story Caller</title>
+    <title>JW Premium Player</title>
     
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <script src="https://ssl.p.jwpcdn.com/7/8/jwplayer.js"></script>
     
     <style>
-        :root {
-            --plyr-color-main: #e50914; /* Netflix Red */
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+        #player-container { width: 100%; height: 100vh; }
 
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-        }
-
-        /* Fullscreen Container */
-        .video-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Back Button */
-        .back-btn {
-            position: absolute; top: 20px; left: 20px; z-index: 10;
-            background: rgba(0,0,0,0.5); color: white; padding: 10px 15px;
-            border-radius: 50%; text-decoration: none; transition: 0.3s;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .back-btn:hover { background: #e50914; }
-
-        /* Custom Overlay for Click-to-Play */
-        #force-click {
+        /* Initial Overlay */
+        #start-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1000; display: flex; justify-content: center; align-items: center;
-            background: radial-gradient(circle, rgba(0,0,0,0.7) 0%, rgba(0,0,0,1) 100%);
-            color: white; cursor: pointer; text-align: center;
+            background: #000; z-index: 9999; display: flex;
+            justify-content: center; align-items: center; color: white;
+            cursor: pointer; font-family: sans-serif;
         }
-
-        .play-icon {
-            font-size: 80px; color: #e50914;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.8; }
+        .play-btn {
+            padding: 15px 30px; background: #ff0000; border-radius: 5px;
+            font-weight: bold; font-size: 18px; text-transform: uppercase;
         }
     </style>
 </head>
 <body>
 
-    <div id="force-click">
-        <div>
-            <div class="play-icon"><i class="fas fa-play-circle"></i></div>
-            <p style="margin-top: 15px; letter-spacing: 1px; font-weight: bold;">CLICK TO STREAM</p>
-        </div>
+    <div id="start-overlay">
+        <div class="play-btn">Click to Play Fullscreen</div>
     </div>
 
-    <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-
-    <div class="video-container">
-        <video id="player" playsinline controls crossorigin></video>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <div id="player-container"></div>
 
     <script>
-        const video = document.getElementById('player');
-        const source = localStorage.getItem("videoLink") || "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"; // Testing ke liye default link
-        const overlay = document.getElementById('force-click');
+        const videoUrl = localStorage.getItem("videoLink") || "YOUR_TEST_LINK_HERE";
 
-        // Initialize Plyr
-        const player = new Plyr(video, {
-            captions: { active: true, update: true, language: 'en' },
-            quality: { default: 720, options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240] }
+        const playerInstance = jwplayer("player-container");
+
+        playerInstance.setup({
+            file: videoUrl,
+            type: "hls", // M3U8 ke liye
+            width: "100%",
+            height: "100%",
+            autostart: false,
+            stretching: "uniform",
+            aspectratio: "16:9",
+            primary: "html5"
         });
 
-        if (!source) {
-            alert("No Video Link Found!");
-            window.location.href = "index.html";
-        }
-
-        // HLS Logic
-        if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(source);
-            hls.attachMedia(video);
-            window.hls = hls;
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = source;
-        }
-
-        // Click to Fullscreen & Play
-        overlay.addEventListener('click', () => {
-            overlay.style.display = 'none';
-            
-            // Fullscreen trigger
-            const container = document.body;
-            if (container.requestFullscreen) { container.requestFullscreen(); }
-            else if (container.webkitRequestFullscreen) { container.webkitRequestFullscreen(); }
-
-            // Auto-landscape (Mobile)
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(() => {});
+        async function startStreaming() {
+            // 1. Fullscreen Request
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                await elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                await elem.webkitRequestFullscreen();
             }
 
-            player.play();
+            // 2. Rotate to Landscape
+            if (screen.orientation && screen.orientation.lock) {
+                try {
+                    await screen.orientation.lock('landscape');
+                } catch (err) {
+                    console.log("Orientation lock failed: ", err);
+                }
+            }
+
+            // 3. Play Video
+            document.getElementById('start-overlay').style.display = 'none';
+            playerInstance.play();
+        }
+
+        // Click event listener
+        document.getElementById('start-overlay').addEventListener('click', startStreaming);
+
+        // Error handling
+        playerInstance.on('setupError', function() {
+            alert("JW Player Setup Failed. Check your link or key.");
         });
     </script>
 </body>
