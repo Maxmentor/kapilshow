@@ -4,27 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Premium Player | Story Caller</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+    
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
-        .artplayer-app { width: 100vw; height: 100vh; }
-        video { width: 100%; height: 100%; display: block; }
-        
-        .back-btn {
-            position: absolute; top: 20px; left: 20px; z-index: 999;
-            background: rgba(0,0,0,0.6); color: white; padding: 8px 16px;
-            border-radius: 30px; text-decoration: none; font-size: 14px;
-            border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+        :root {
+            --plyr-color-main: #e50914; /* Netflix Red */
         }
 
-        /* Click Overlay to Force Landscape */
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Fullscreen Container */
+        .video-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Back Button */
+        .back-btn {
+            position: absolute; top: 20px; left: 20px; z-index: 10;
+            background: rgba(0,0,0,0.5); color: white; padding: 10px 15px;
+            border-radius: 50%; text-decoration: none; transition: 0.3s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .back-btn:hover { background: #e50914; }
+
+        /* Custom Overlay for Click-to-Play */
         #force-click {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1000; display: flex; justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.8); color: white; cursor: pointer;
-            font-family: sans-serif; text-align: center;
+            background: radial-gradient(circle, rgba(0,0,0,0.7) 0%, rgba(0,0,0,1) 100%);
+            color: white; cursor: pointer; text-align: center;
+        }
+
+        .play-icon {
+            font-size: 80px; color: #e50914;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
         }
     </style>
 </head>
@@ -32,78 +66,62 @@
 
     <div id="force-click">
         <div>
-            <div style="font-size: 40px; margin-bottom: 10px;">▶</div>
-            <p>Click to Start in Fullscreen</p>
+            <div class="play-icon"><i class="fas fa-play-circle"></i></div>
+            <p style="margin-top: 15px; letter-spacing: 1px; font-weight: bold;">CLICK TO STREAM</p>
         </div>
     </div>
 
     <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-    <div class="artplayer-app"></div>
+
+    <div class="video-container">
+        <video id="player" playsinline controls crossorigin></video>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
     <script>
-        const videoSrc = localStorage.getItem("videoLink");
+        const video = document.getElementById('player');
+        const source = localStorage.getItem("videoLink") || "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"; // Testing ke liye default link
         const overlay = document.getElementById('force-click');
 
-        if (!videoSrc) {
+        // Initialize Plyr
+        const player = new Plyr(video, {
+            captions: { active: true, update: true, language: 'en' },
+            quality: { default: 720, options: [4320, 2880, 2160, 1440, 1080, 720, 576, 480, 360, 240] }
+        });
+
+        if (!source) {
             alert("No Video Link Found!");
             window.location.href = "index.html";
         }
 
-        var art = new Artplayer({
-            container: '.artplayer-app',
-            url: videoSrc,
-            type: 'm3u8',
-            fullscreen: true,
-            fullscreenWeb: true,
-            autoplay: false, // Click ke baad start karenge
-            autoSize: false,
-            autoHeight: false,
-            setting: true,
-            playbackRate: true,
-            aspectRatio: true,
-            theme: '#e50914',
-            moreVideoAttr: {
-                playsInline: true,
-                'webkit-playsinline': true,
-                style: 'object-fit: contain;'
-            },
-            customType: {
-                m3u8: function (video, url) {
-                    if (Hls.isSupported()) {
-                        const hls = new Hls();
-                        hls.loadSource(url);
-                        hls.attachMedia(video);
-                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = url;
-                    }
-                },
-            }
-        });
-
-        // Landscape & Fullscreen logic
-        function setLandscape() {
-            const el = document.documentElement;
-            const rfs = el.requestFullscreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-            
-            if (rfs) {
-                rfs.call(el).then(() => {
-                    if (screen.orientation && screen.orientation.lock) {
-                        screen.orientation.lock('landscape').catch(e => console.log("Orientation lock failed"));
-                    }
-                    overlay.style.display = 'none'; // Click hote hi overlay khatam
-                    art.play(); // Video start
-                }).catch(e => {
-                    overlay.style.display = 'none';
-                    art.play();
-                });
-            }
+        // HLS Logic
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(source);
+            hls.attachMedia(video);
+            window.hls = hls;
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = source;
         }
 
-        // Jab user kahin bhi click karega, tab landscape trigger hoga
-        overlay.addEventListener('click', setLandscape);
+        // Click to Fullscreen & Play
+        overlay.addEventListener('click', () => {
+            overlay.style.display = 'none';
+            
+            // Fullscreen trigger
+            const container = document.body;
+            if (container.requestFullscreen) { container.requestFullscreen(); }
+            else if (container.webkitRequestFullscreen) { container.webkitRequestFullscreen(); }
 
-        // Resize handle
-        window.addEventListener('resize', () => art.resize());
+            // Auto-landscape (Mobile)
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {});
+            }
+
+            player.play();
+        });
     </script>
 </body>
 </html>
