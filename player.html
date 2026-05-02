@@ -3,76 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Force Rotate Player</title>
-    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <title>Ultimate MKV Player</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dplayer/dist/DPlayer.min.js"></script>
+
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
         
-        /* Player Container */
-        #video-wrapper {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: transform 0.3s ease;
-        }
+        #dplayer { width: 100vw; height: 100vh; }
 
-        /* Jab screen khadi (Portrait) ho, toh player ko ghuma do */
-        @media screen and (orientation: portrait) {
-            #video-wrapper {
-                width: 100vh;
-                height: 100vw;
-                transform: rotate(90deg);
-                transform-origin: center center;
-            }
-        }
-
-        .video-js { width: 100% !important; height: 100% !important; }
-
-        #overlay {
+        /* Force Landscape Overlay */
+        #play-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 9999; display: flex;
-            justify-content: center; align-items: center; color: white;
-            cursor: pointer; font-family: sans-serif;
+            flex-direction: column; justify-content: center; align-items: center;
+            color: white; cursor: pointer; font-family: sans-serif;
         }
-        .play-btn { padding: 20px 40px; background: #e50914; border-radius: 50px; font-weight: bold; }
+
+        .play-icon {
+            font-size: 60px; color: #ff0000; border: 3px solid #ff0000;
+            border-radius: 50%; width: 100px; height: 100px;
+            display: flex; justify-content: center; align-items: center;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 
-    <div id="overlay" onclick="startPlayer()">
-        <div class="play-btn">START FULLSCREEN</div>
+    <div id="play-overlay" onclick="initPlayer()">
+        <div class="play-icon">▶</div>
+        <p style="font-weight: bold; letter-spacing: 1px;">TAP TO START FULLSCREEN</p>
     </div>
 
-    <div id="video-wrapper">
-        <video id="my-video" class="video-js vjs-default-skin" controls playsinline></video>
-    </div>
-
-    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <div id="dplayer"></div>
 
     <script>
-        const player = videojs('my-video');
-        const videoSrc = localStorage.getItem("videoLink") || "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
+        const videoLink = localStorage.getItem("videoLink") || "APKA_LINK_YAHAN_DAALEIN";
 
-        function startPlayer() {
-            // 1. Source load
-            player.src({ src: videoSrc, type: 'application/x-mpegURL' });
+        function initPlayer() {
+            // 1. Hide Overlay
+            document.getElementById('play-overlay').style.display = 'none';
 
-            // 2. Fullscreen attempt (Chrome/Safari)
-            const docElm = document.documentElement;
-            if (docElm.requestFullscreen) { docElm.requestFullscreen(); }
-            else if (docElm.webkitRequestFullscreen) { docElm.webkitRequestFullscreen(); }
+            // 2. Fullscreen & Rotate Logic
+            const el = document.documentElement;
+            if (el.requestFullscreen) {
+                el.requestFullscreen();
+            } else if (el.webkitRequestFullscreen) {
+                el.webkitRequestFullscreen();
+            }
 
-            // 3. Hide overlay and play
-            document.getElementById('overlay').style.display = 'none';
-            player.play();
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(e => console.log("Rotate ignore"));
+            }
+
+            // 3. Setup DPlayer
+            const dp = new DPlayer({
+                container: document.getElementById('dplayer'),
+                autoplay: true,
+                screenshot: true,
+                video: {
+                    url: videoLink,
+                    type: 'auto' // MKV ya M3U8 apne aap pehchan lega
+                },
+                theme: '#ff0000'
+            });
+
+            dp.play();
         }
-
-        // Error handling
-        player.on('error', function() {
-            alert("Video Link Expired ya Galat hai!");
-        });
     </script>
 </body>
 </html>
